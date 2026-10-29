@@ -1,3 +1,4 @@
 _site/
 input/
 __pycache__/
+pdf/.*
