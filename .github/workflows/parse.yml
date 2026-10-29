@@ -1,0 +1,32 @@
+name: Validate question pairing from cached source OCR
+on:
+  push:
+    paths: ['tools/parse.py']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: parse-source
+  cancel-in-progress: false
+jobs:
+  parse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: mkdir -p _site/data && python tools/parse.py
+      - name: Save source pairing audit
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data
+          if ! git diff --cached --quiet; then git commit -m 'Validate original exercise and answer pairs'; git fetch origin main; git merge --no-edit origin/main; git push; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: question-pairing-audit
+          path: data/*report.json
