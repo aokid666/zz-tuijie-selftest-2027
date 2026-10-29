@@ -48,7 +48,7 @@ def reviewed_answer(day,no,manual):
  return [{'page':63+pn,'b':[20,y,pg['width']-40,bottom-y]}],quote,[{'source':'tuijie-manual-lower','page':pn,'quote':quote,'method':'reviewed-source-passage'}]
 
 def main():
- d={'source':json.loads((ROOT/'tools/sources.json').read_text())[0],'pages':[json.loads(p.read_text()) for p in sorted((ROOT/'data/ocr').glob(ID+'-*.json'))]};ps=d['pages'];manual=read_manual();mp=manual['pages'];assert len(ps)==63
+ d={'source':json.loads((ROOT/'tools/sources.json').read_text())[0],'pages':[json.loads(p.read_text()) for p in sorted((ROOT/'data/ocr').glob(ID+'-*.json'))]};ps=d['pages'];dump('source-pages.json',d);manual=read_manual();mp=manual['pages'];assert len(ps)==63
  qs=[];errors=[];days=[]
  for day in range(1,31):
   pages=ps[2*day+1:2*day+3];first=pages[0];pre=''.join(l['t'] for l in first['lines']);m=re.search(r'页码[：:]?P?\s*(\d+)\s*[-—~～一]\s*P?\s*(\d+)',pre,re.I)
