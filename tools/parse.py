@@ -40,6 +40,13 @@ def merged_lines(pg):
   result.append({'t':text,'b':[min(l['b'][0] for l in ls),min(l['b'][1] for l in ls),max(l['b'][2] for l in ls),max(l['b'][3] for l in ls)]})
  return result
 
+def reviewed_answer(day,no,manual):
+ known={(1,1):(7,'中国共产党一经成立',1,3),(4,2):(14,'第一次提出了“建设有中国特色',0,4),(6,6):(18,'孙中山',0,4),(7,1):(19,'毛泽东思想发展历程',0,18),(7,2):(19,'毛泽东思想发展历程',0,18)}
+ key=known.get((day,no))
+ if not key:return None
+ pn,anchor,before,after=key;pg=manual[pn-1];rs=pg['lines'];i=next(i for i,l in enumerate(rs) if anchor in l['t']);chosen=rs[max(0,i-before):i+after];y=chosen[0]['b'][1]-5;bottom=chosen[-1]['b'][3]+5;quote='\n'.join(l['t'] for l in chosen)
+ return [{'page':63+pn,'b':[20,y,pg['width']-40,bottom-y]}],quote,[{'source':'tuijie-manual-lower','page':pn,'quote':quote,'method':'reviewed-source-passage'}]
+
 def main():
  d=json.loads((ROOT/'data'/f'{ID}.json').read_text());ps=d['pages'];manual=read_manual();mp=manual['pages'];assert len(ps)==63
  qs=[];errors=[];days=[]
@@ -61,6 +68,7 @@ def main():
      continue
     if stopped or line['b'][1]<20 or line['b'][3]>pg['height']-20 or (line['b'][1]>pg['height']*.9 and re.fullmatch(r'[·.\s]*\d+[·.\s]*',text)):continue
     h=re.match(r'^(\d{1,2})\s*[.．、。，,:：]\s*(.*)',text) if line['b'][0]<pg['width']*.3 else None
+    if h and int(h[1])>expected:errors.append(f'Day {day}: missing question boundary before {h[1]}')
     if h and int(h[1])==expected:
      if cur:cur['end']=(pg['page'],line['b'][1]-3);groups.append(cur)
      cur={'no':expected,'rows':[{**line,'p':pg['page'],'rest':h[2]}],'start':(pg['page'],line['b'][1]-4)};expected+=1
@@ -70,7 +78,7 @@ def main():
    cur.setdefault('end',(cur['rows'][-1]['p'],cur['rows'][-1]['b'][3]+12));groups.append(cur)
   if not groups:errors.append(f'Day {day}: no numbered original test questions')
   for g in groups:
-   rows=g['rows'];keyrefs,answer,evidence=find_answer(rows,mp,scope);qrefs=[]
+   rows=g['rows'];keyrefs,answer,evidence=reviewed_answer(day,g['no'],mp) or find_answer(rows,mp,scope);qrefs=[]
    for pn in range(g['start'][0],g['end'][0]+1):
     pg=ps[pn-1];y=g['start'][1] if pn==g['start'][0] else 25;bottom=g['end'][1] if pn==g['end'][0] else pg['height']-25
     if bottom>y:qrefs.append({'page':pn,'b':[20,max(0,y),pg['width']-40,min(pg['height'],bottom)-max(0,y)]})
